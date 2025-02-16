@@ -1,0 +1,18 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: TaskBoard.Service.Boot
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_REALM_URI:http://localhost:8081/realms/MyRealm}
+          jwk-set-uri: ${KEYCLOAK_REALM_URI:http://localhost:8081/realms/MyRealm}/protocol/openid-connect/certs
+
+keycloak:
+  auth-server-url: ${KEYCLOAK_REALM_URI:http://localhost:8081/realms/MyRealm}/protocol/openid-connect/token
+  logout-server-url: ${KEYCLOAK_REALM_URI:http://localhost:8081/realms/MyRealm}/protocol/openid-connect/logout
+  client-id: my-client
