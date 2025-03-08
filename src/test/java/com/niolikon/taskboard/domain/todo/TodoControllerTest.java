@@ -1,9 +1,11 @@
 package com.niolikon.taskboard.domain.todo;
 
+import com.niolikon.taskboard.domain.todo.dto.TodoPatch;
 import com.niolikon.taskboard.domain.todo.dto.TodoRequest;
 import com.niolikon.taskboard.domain.todo.dto.TodoView;
 import com.niolikon.taskboard.domain.todo.service.ITodoService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -99,6 +101,40 @@ class TodoControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(OK);
         assertThat(response.getBody()).isEqualTo(updatedTodo);
         verify(todoService, times(1)).update(STUB_JWT_CLAIMS_SUBJECT, 1L, updateRequest);
+    }
+
+    @Test
+    @Tag("Story=TBS1")
+    void givenValidInput_whenPatchTodo_thenOkIsReturned() {
+        Jwt stubJwt = mock(Jwt.class);
+        when(stubJwt.getSubject()).thenReturn(STUB_JWT_CLAIMS_SUBJECT);
+        TodoPatch patchRequest = new TodoPatch("Title", "Updated Description", Boolean.TRUE, Date.from(Instant.now()));
+        TodoView updatedTodo = new TodoView(1L, "Title", "Updated Description", Boolean.TRUE, patchRequest.getDueDate());
+        when(todoService.patch(anyString(), eq(1L), any(TodoPatch.class))).thenReturn(updatedTodo);
+
+        ResponseEntity<TodoView> response = todoController.patch(stubJwt, 1L, patchRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(OK);
+        assertThat(response.getBody()).isEqualTo(updatedTodo);
+        verify(todoService, times(1)).patch(STUB_JWT_CLAIMS_SUBJECT, 1L, patchRequest);
+    }
+
+    @Test
+    @Tag("Story=TBS1")
+    void givenValidInput_whenReadAllPendingTodos_thenOkIsReturned() {
+        Jwt stubJwt = mock(Jwt.class);
+        when(stubJwt.getSubject()).thenReturn(STUB_JWT_CLAIMS_SUBJECT);
+        List<TodoView> pendingTodos = List.of(
+                new TodoView(1L, "Title", "A Description", Boolean.TRUE, Date.from(Instant.now())),
+                new TodoView(5L, "Title", "Another Description", Boolean.TRUE, Date.from(Instant.now()))
+                );
+        when(todoService.readAllPending(anyString())).thenReturn(pendingTodos);
+
+        ResponseEntity<List<TodoView>> response = todoController.readAllPending(stubJwt);
+
+        assertThat(response.getStatusCode()).isEqualTo(OK);
+        assertThat(response.getBody()).isEqualTo(pendingTodos);
+        verify(todoService, times(1)).readAllPending(STUB_JWT_CLAIMS_SUBJECT);
     }
 
     @Test
