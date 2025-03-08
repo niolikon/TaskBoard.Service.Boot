@@ -3,6 +3,7 @@ package com.niolikon.taskboard.domain.todo.service;
 import com.niolikon.taskboard.application.exception.rest.EntityNotFoundRestException;
 import com.niolikon.taskboard.domain.todo.TodoMapper;
 import com.niolikon.taskboard.domain.todo.TodoRepository;
+import com.niolikon.taskboard.domain.todo.dto.TodoPatch;
 import com.niolikon.taskboard.domain.todo.dto.TodoRequest;
 import com.niolikon.taskboard.domain.todo.dto.TodoView;
 import com.niolikon.taskboard.domain.todo.model.Todo;
@@ -49,6 +50,18 @@ public class TodoService implements ITodoService {
                 .orElseThrow(() -> new EntityNotFoundRestException("Could not find Todo"));
         todo.updateFrom(todoMapper.toTodo(todoRequest));
         return todoMapper.toTodoView(todoRepository.save(todo));
+    }
+
+    @Override
+    public TodoView patch(String ownerUid, Long id, TodoPatch todoPatch)
+    {
+        return TodoView.builder().build();
+    }
+
+    @Override
+    public List<TodoView> readAllPending(String ownerUid)
+    {
+        return List.of(TodoView.builder().build());
     }
 
     @Override
