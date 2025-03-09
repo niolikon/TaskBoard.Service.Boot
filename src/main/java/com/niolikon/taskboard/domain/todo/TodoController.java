@@ -72,7 +72,7 @@ public class  TodoController {
         return ok().body(userTodo);
     }
 
-    @GetMapping("/pending/")
+    @GetMapping("/pending")
     public ResponseEntity<List<TodoView>> readAllPending(@AuthenticationPrincipal Jwt jwt) {
         String ownerUid = jwt.getSubject();
         List<TodoView> pendingTodos = todoService.readAllPending(ownerUid);

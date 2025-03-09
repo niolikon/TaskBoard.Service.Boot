@@ -11,10 +11,12 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Transactional
 public class TodoService implements ITodoService {
+    private static final String TODO_NOT_FOUND = "Could not find Todo";
 
     private final TodoRepository todoRepository;
     private final TodoMapper todoMapper;
@@ -40,14 +42,14 @@ public class TodoService implements ITodoService {
     @Override
     public TodoView read(String ownerUid, Long id) {
         Todo todo = todoRepository.findByIdAndOwnerUid(id, ownerUid)
-                .orElseThrow(() -> new EntityNotFoundRestException("Could not find Todo"));
+                .orElseThrow(() -> new EntityNotFoundRestException(TodoService.TODO_NOT_FOUND));
         return todoMapper.toTodoView(todo);
     }
 
     @Override
     public TodoView update(String ownerUid, Long id, TodoRequest todoRequest) {
         Todo todo = todoRepository.findByIdAndOwnerUid(id, ownerUid)
-                .orElseThrow(() -> new EntityNotFoundRestException("Could not find Todo"));
+                .orElseThrow(() -> new EntityNotFoundRestException(TodoService.TODO_NOT_FOUND));
         todo.updateFrom(todoMapper.toTodo(todoRequest));
         return todoMapper.toTodoView(todoRepository.save(todo));
     }
@@ -55,19 +57,27 @@ public class TodoService implements ITodoService {
     @Override
     public TodoView patch(String ownerUid, Long id, TodoPatch todoPatch)
     {
-        return TodoView.builder().build();
+        Todo todo = todoRepository.findByIdAndOwnerUid(id, ownerUid)
+                .orElseThrow(() -> new EntityNotFoundRestException(TodoService.TODO_NOT_FOUND));
+        if (Objects.isNull(todo.getIsCompleted()) || (! todo.getIsCompleted()))  {
+            todo.updateFrom(todoMapper.toTodo(todoPatch));
+            todoRepository.save(todo);
+        }
+
+        return todoMapper.toTodoView(todo);
     }
 
     @Override
     public List<TodoView> readAllPending(String ownerUid)
     {
-        return List.of(TodoView.builder().build());
+        List<Todo> pendingTodos = todoRepository.findByOwnerUidAndIsCompleted(ownerUid, Boolean.FALSE);
+        return pendingTodos.parallelStream().map(todoMapper::toTodoView).toList();
     }
 
     @Override
     public void delete(String ownerUid, Long id) {
         Todo todo = todoRepository.findByIdAndOwnerUid(id, ownerUid)
-                .orElseThrow(() -> new EntityNotFoundRestException("Could not find Todo"));
+                .orElseThrow(() -> new EntityNotFoundRestException(TodoService.TODO_NOT_FOUND));
         todoRepository.delete(todo);
     }
 }
