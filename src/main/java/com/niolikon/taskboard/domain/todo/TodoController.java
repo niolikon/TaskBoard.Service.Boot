@@ -1,5 +1,6 @@
 package com.niolikon.taskboard.domain.todo;
 
+import com.niolikon.taskboard.domain.todo.dto.TodoPatch;
 import com.niolikon.taskboard.domain.todo.dto.TodoRequest;
 import com.niolikon.taskboard.domain.todo.dto.TodoView;
 import com.niolikon.taskboard.domain.todo.service.ITodoService;
@@ -60,6 +61,22 @@ public class  TodoController {
         String ownerUid = jwt.getSubject();
         TodoView userTodo = todoService.update(ownerUid, id, todoRequest);
         return ok().body(userTodo);
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<TodoView> patch(@AuthenticationPrincipal Jwt jwt,
+                                          @PathVariable("id") Long id,
+                                          @Valid @RequestBody TodoPatch todoPatch) {
+        String ownerUid = jwt.getSubject();
+        TodoView userTodo = todoService.patch(ownerUid, id, todoPatch);
+        return ok().body(userTodo);
+    }
+
+    @GetMapping("/pending")
+    public ResponseEntity<List<TodoView>> readAllPending(@AuthenticationPrincipal Jwt jwt) {
+        String ownerUid = jwt.getSubject();
+        List<TodoView> pendingTodos = todoService.readAllPending(ownerUid);
+        return ok().body(pendingTodos);
     }
 
     @DeleteMapping("/{id}")

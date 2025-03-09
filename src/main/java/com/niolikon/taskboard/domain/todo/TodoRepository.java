@@ -10,5 +10,6 @@ import java.util.Optional;
 @Repository
 public interface TodoRepository extends JpaRepository<Todo, Long> {
     List<Todo> findByOwnerUid(String ownerUid);
+    List<Todo> findByOwnerUidAndIsCompleted(String ownerUid, Boolean isCompleted);
     Optional<Todo> findByIdAndOwnerUid(Long id, String ownerUid);
 }

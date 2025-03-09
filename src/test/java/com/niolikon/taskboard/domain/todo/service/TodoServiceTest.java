@@ -3,10 +3,12 @@ package com.niolikon.taskboard.domain.todo.service;
 import com.niolikon.taskboard.application.exception.rest.EntityNotFoundRestException;
 import com.niolikon.taskboard.domain.todo.TodoMapper;
 import com.niolikon.taskboard.domain.todo.TodoRepository;
+import com.niolikon.taskboard.domain.todo.dto.TodoPatch;
 import com.niolikon.taskboard.domain.todo.dto.TodoRequest;
 import com.niolikon.taskboard.domain.todo.dto.TodoView;
 import com.niolikon.taskboard.domain.todo.model.Todo;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -15,6 +17,7 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import org.assertj.core.api.Assertions;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -129,6 +132,98 @@ class TodoServiceTest {
 
         assertThrows(EntityNotFoundRestException.class, () -> todoService.update(VALID_OWNER_UID, VALID_NON_EXISTENT_TODO_ID, updateRequest));
         verify(todoRepository, times(1)).findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID);
+    }
+
+    @Test
+    @Tag("Story=TBS1")
+    @Tag("Scenario=1")
+    void givenTodoNotCompleted_whenOwnerRequestsMarkingComplete_thenTodoIsPatched() {
+        Todo existingTodo = Todo.builder()
+                .id(VALID_EXISTENT_TODO_ID).ownerUid(VALID_OWNER_UID)
+                .title("Title").description("Description").isCompleted(Boolean.FALSE).dueDate(Date.from(Instant.now()))
+                .build();
+        when(todoRepository.findByIdAndOwnerUid(VALID_EXISTENT_TODO_ID, VALID_OWNER_UID)).thenReturn(Optional.of(existingTodo));
+        TodoPatch todoPatch = TodoPatch.builder()
+                .isCompleted(Boolean.TRUE)
+                .build();
+        Todo todoWithPatchFields = Todo.builder()
+                .isCompleted(Boolean.TRUE)
+                .build();
+        when(todoMapper.toTodo(todoPatch)).thenReturn(todoWithPatchFields);
+        Todo patchedTodo = Todo.builder()
+                .id(VALID_EXISTENT_TODO_ID).ownerUid(VALID_OWNER_UID)
+                .title(existingTodo.getTitle()).description(existingTodo.getDescription())
+                .isCompleted(todoWithPatchFields.getIsCompleted())
+                .dueDate(existingTodo.getDueDate())
+                .build();
+        when(todoRepository.save(existingTodo)).thenReturn(patchedTodo);
+        TodoView expectedView = TodoView.builder()
+                .id(VALID_EXISTENT_TODO_ID)
+                .title(patchedTodo.getTitle()).description(patchedTodo.getDescription()).isCompleted(patchedTodo.getIsCompleted())
+                .dueDate(patchedTodo.getDueDate())
+                .build();
+        when(todoMapper.toTodoView(patchedTodo)).thenReturn(expectedView);
+
+        TodoView result = todoService.patch(VALID_OWNER_UID, VALID_EXISTENT_TODO_ID, todoPatch);
+
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(expectedView);
+        verify(todoRepository, times(1)).save(existingTodo);
+    }
+
+    @Test
+    @Tag("Story=TBS1")
+    @Tag("Scenario=2")
+    void givenTodoCompleted_whenOwnerRequestsMarkingComplete_thenTodoIsNotPatched() {
+        Todo existingTodo = Todo.builder()
+                .id(VALID_EXISTENT_TODO_ID).ownerUid(VALID_OWNER_UID)
+                .title("Title").description("Description").isCompleted(Boolean.TRUE).dueDate(Date.from(Instant.now()))
+                .build();
+        when(todoRepository.findByIdAndOwnerUid(VALID_EXISTENT_TODO_ID, VALID_OWNER_UID)).thenReturn(Optional.of(existingTodo));
+        TodoPatch todoPatch = TodoPatch.builder()
+                .description("Patched Description").isCompleted(Boolean.TRUE)
+                .build();
+        TodoView expectedView = TodoView.builder()
+                .id(VALID_EXISTENT_TODO_ID)
+                .title(existingTodo.getTitle()).description(existingTodo.getDescription()).isCompleted(existingTodo.getIsCompleted())
+                .dueDate(existingTodo.getDueDate())
+                .build();
+        when(todoMapper.toTodoView(existingTodo)).thenReturn(expectedView);
+
+        TodoView result = todoService.patch(VALID_OWNER_UID, VALID_EXISTENT_TODO_ID, todoPatch);
+
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(expectedView);
+        verify(todoRepository, times(0)).save(existingTodo);
+    }
+
+    @Test
+    @Tag("Story=TBS1")
+    void givenNonExistingTodo_whenPatch_thenThrowsException() {
+        TodoPatch todoPatch = TodoPatch.builder()
+                .isCompleted(Boolean.TRUE).build();
+        when(todoRepository.findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundRestException.class, () -> todoService.patch(VALID_OWNER_UID, VALID_NON_EXISTENT_TODO_ID, todoPatch));
+        verify(todoRepository, times(1)).findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID);
+    }
+
+    @Test
+    @Tag("Story=TBS1")
+    void givenPendingTodosExist_whenReadAllPending_thenReturnsTodoViewList() {
+        List<Todo> pendingTodos = List.of(new Todo(), new Todo());
+        when(todoRepository.findByOwnerUidAndIsCompleted(VALID_OWNER_UID, Boolean.FALSE)).thenReturn(pendingTodos);
+        List<TodoView> expectedViews = List.of(
+                new TodoView(1L, "Task 1", "Desc 1", false, Date.from(Instant.now())),
+                new TodoView(2L, "Task 2", "Desc 2", false, Date.from(Instant.now()))
+        );
+        when(todoMapper.toTodoView(any(Todo.class))).thenReturn(expectedViews.get(0), expectedViews.get(1));
+
+        List<TodoView> result = todoService.readAllPending(VALID_OWNER_UID);
+
+        assertThat(result).isNotNull();
+        Assertions.assertThat(result).containsExactlyInAnyOrderElementsOf(expectedViews);
+        verify(todoRepository, times(1)).findByOwnerUidAndIsCompleted(VALID_OWNER_UID, Boolean.FALSE);
     }
 
     @Test

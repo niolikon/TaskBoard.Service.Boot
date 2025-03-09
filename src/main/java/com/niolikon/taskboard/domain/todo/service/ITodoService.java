@@ -1,5 +1,6 @@
 package com.niolikon.taskboard.domain.todo.service;
 
+import com.niolikon.taskboard.domain.todo.dto.TodoPatch;
 import com.niolikon.taskboard.domain.todo.dto.TodoRequest;
 import com.niolikon.taskboard.domain.todo.dto.TodoView;
 
@@ -13,6 +14,10 @@ public interface ITodoService {
     TodoView read(String ownerUid, Long id);
 
     TodoView update(String ownerUid, Long id, TodoRequest todoRequest);
+
+    TodoView patch(String ownerUid, Long id, TodoPatch todoPatch);
+
+    List<TodoView> readAllPending(String ownerUid);
 
     void delete(String ownerUid, Long id);
 }
