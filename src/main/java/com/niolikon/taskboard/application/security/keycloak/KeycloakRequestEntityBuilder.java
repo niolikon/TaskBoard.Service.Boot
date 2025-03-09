@@ -1,6 +1,5 @@
 package com.niolikon.taskboard.application.security.keycloak;
 
-import org.mapstruct.ap.internal.util.Strings;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -9,7 +8,7 @@ import org.springframework.util.MultiValueMap;
 
 import java.util.Objects;
 
-public class KeycloakRequestEntityBuilder extends HttpEntity<MultiValueMap<String, String>> {
+public class KeycloakRequestEntityBuilder {
     private String clientId;
     private String clientSecret;
     private String username;
@@ -68,22 +67,22 @@ public class KeycloakRequestEntityBuilder extends HttpEntity<MultiValueMap<Strin
     public HttpEntity<MultiValueMap<String, String>> build() {
         MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
 
-        if (Objects.nonNull(clientId) && Strings.isNotEmpty(clientId)) {
+        if (Objects.nonNull(clientId) && (!clientId.isEmpty())) {
             requestBody.add("client_id", clientId);
         }
-        if (Objects.nonNull(clientSecret) && Strings.isNotEmpty(clientSecret)) {
+        if (Objects.nonNull(clientSecret) && (!clientSecret.isEmpty())) {
             requestBody.add("client_secret", clientSecret);
         }
-        if (Objects.nonNull(username) && Strings.isNotEmpty(username)) {
+        if (Objects.nonNull(username) && (!username.isEmpty())) {
             requestBody.add("username", username);
         }
-        if (Objects.nonNull(password) && Strings.isNotEmpty(password)) {
+        if (Objects.nonNull(password) && (!password.isEmpty())) {
             requestBody.add("password", password);
         }
-        if (Objects.nonNull(refreshToken) && Strings.isNotEmpty(refreshToken)) {
+        if (Objects.nonNull(refreshToken) && (!refreshToken.isEmpty())) {
             requestBody.add("refresh_token", refreshToken);
         }
-        if (Objects.nonNull(grantType) && Strings.isNotEmpty(grantType)) {
+        if (Objects.nonNull(grantType) && (!grantType.isEmpty())) {
             requestBody.add("grant_type", grantType);
         }
 
