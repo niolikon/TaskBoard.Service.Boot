@@ -149,6 +149,7 @@
 				<version>${maven.surefire.version}</version>
 				<configuration>
 					<argLine>-XX:+EnableDynamicAgentLoading</argLine>
+					<excludedGroups>integration</excludedGroups>
 				</configuration>
 			</plugin>
 			<plugin>
