@@ -8,9 +8,10 @@
 		<version>3.4.2</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.niolikon</groupId>
-	<artifactId>taskboard-service</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<groupId>com.github.niolikon</groupId>
+	<artifactId>taskboard-service-boot</artifactId>
+	<packaging>jar</packaging>
+	<version>0.0.1</version>
 	<name>TaskBoard.Service.Boot</name>
 	<description>Task Board Service (Spring Case Study)</description>
 	<url>https://github.com/niolikon/TaskBoard.Service.Boot</url>
@@ -28,15 +29,13 @@
 		</developer>
 	</developers>
 	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
+		<url>https://github.com/niolikon/TaskBoard.Framework.Boot</url>
 	</scm>
 	<properties>
 		<java.version>17</java.version>
 		<maven.compiler.version>3.8.1</maven.compiler.version>
-		<maven.surefire.version>3.0.0-M7</maven.surefire.version>
+		<maven.surefire.version>3.1.2</maven.surefire.version>
+		<maven.failsafe.version>3.1.2</maven.failsafe.version>
 		<org.mapstruct.version>1.6.3</org.mapstruct.version>
 		<org.projectlombok.version>1.18.30</org.projectlombok.version>
 		<org.testcontainers.version>1.20.6</org.testcontainers.version>
@@ -82,6 +81,12 @@
 			<artifactId>lombok</artifactId>
 			<version>${org.projectlombok.version}</version>
 			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.github.niolikon</groupId>
+			<artifactId>TaskBoard.Framework.Boot</artifactId>
+			<version>0.0.1</version>
 		</dependency>
 
 		<dependency>
@@ -148,8 +153,36 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>${maven.surefire.version}</version>
 				<configuration>
-					<argLine>-XX:+EnableDynamicAgentLoading</argLine>
-					<excludedGroups>integration</excludedGroups>
+					<argLine>
+						--add-opens java.base/java.lang=ALL-UNNAMED
+						--add-opens java.base/java.util=ALL-UNNAMED
+						--add-opens java.base/sun.nio.ch=ALL-UNNAMED
+						--add-opens java.base/java.net=ALL-UNNAMED
+						-XX:+EnableDynamicAgentLoading
+					</argLine>
+					<includes>
+						<include>**/*Test.java</include>
+					</includes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>${maven.failsafe.version}</version>
+				<executions>
+					<execution>
+						<id>integration-tests</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<includes>
+						<include>**/*IT.java</include>
+					</includes>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -167,13 +200,6 @@
 		</plugins>
 	</build>
 
-	<distributionManagement>
-		<repository>
-			<id>github</id>
-			<url>https://maven.pkg.github.com/niolikon/TaskBoard.Service.Boot</url>
-		</repository>
-	</distributionManagement>
-
 	<profiles>
 		<profile>
 			<id>dev</id>
@@ -189,5 +215,20 @@
 			</properties>
 		</profile>
 	</profiles>
+
+	<distributionManagement>
+		<repository>
+			<id>github</id>
+			<name>GitHub Packages</name>
+			<url>https://maven.pkg.github.com/niolikon/TaskBoard.Service.Boot</url>
+		</repository>
+	</distributionManagement>
+
+	<repositories>
+		<repository>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
+		</repository>
+	</repositories>
 
 </project>
