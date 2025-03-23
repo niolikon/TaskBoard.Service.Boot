@@ -5,9 +5,9 @@ networks:
     driver: bridge
 
 services:
-  taskboard-keycloak-db:
+  taskboard-keycloak-db-boot:
     image: postgres:15
-    container_name: taskboard-keycloak-db
+    container_name: taskboard-keycloak-db-boot
     restart: always
     environment:
       POSTGRES_DB: keycloak
@@ -18,16 +18,16 @@ services:
     networks:
       - backend-network
 
-  taskboard-keycloak:
+  taskboard-keycloak-boot:
     image: quay.io/keycloak/keycloak:22.0
-    container_name: taskboard-keycloak
+    container_name: taskboard-keycloak-boot
     restart: always
     depends_on:
-      - taskboard-keycloak-db
+      - taskboard-keycloak-db-boot
     environment:
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://taskboard-keycloak-db/keycloak
-      KC_HOSTNAME: taskboard-keycloak
+      KC_DB_URL: jdbc:postgresql://taskboard-keycloak-db-boot/keycloak
+      KC_HOSTNAME: taskboard-keycloak-boot
       KC_DB_USERNAME: keycloak
       KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
       KEYCLOAK_ADMIN: admin
@@ -40,9 +40,9 @@ services:
     ports:
       - "8081:8080"
 
-  taskboard-service-db:
+  taskboard-service-db-boot:
     image: postgres:15
-    container_name: taskboard-service-db
+    container_name: taskboard-service-db-boot
     restart: always
     env_file:
       - .env
@@ -55,21 +55,21 @@ services:
     networks:
       - backend-network
 
-  taskboard-service:
+  taskboard-service-boot:
     image: taskboard-service-boot:latest
-    container_name: taskboard-service
+    container_name: taskboard-service-boot
     restart: always
     depends_on:
-      - taskboard-service-db
-      - taskboard-keycloak
+      - taskboard-service-db-boot
+      - taskboard-keycloak-boot
     env_file:
       - .env
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      SPRING_DATASOURCE_URL: jdbc:postgresql://taskboard-service-db:5432/${DB_NAME}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://taskboard-service-db-boot:5432/${DB_NAME}
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      KEYCLOAK_REALM_URI: http://taskboard-keycloak:8080/realms/TodoRealm
+      KEYCLOAK_SERVER_URL: http://taskboard-keycloak-boot:8080
     networks:
       - backend-network
     ports:

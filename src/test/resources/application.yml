@@ -1,0 +1,18 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: TaskBoard.Service.Boot
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://fake-issuer
+          jwk-set-uri: http://fake-issuer/certs
