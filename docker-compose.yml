@@ -69,7 +69,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://taskboard-service-db-boot:5432/${DB_NAME}
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      KEYCLOAK_REALM_URI: http://taskboard-keycloak-boot:8080/realms/TodoRealm
+      KEYCLOAK_SERVER_URL: http://taskboard-keycloak-boot:8080
     networks:
       - backend-network
     ports:

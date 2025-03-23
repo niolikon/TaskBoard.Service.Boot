@@ -8,7 +8,8 @@ Task Board Service (Spring Case Study)
 # Overview
 
 📚 **TaskBoard.Service.Boot** is a simple Web API project designed to manage Personal Tasks as a Todo list.
-This project demonstrates fundamental software development concepts such as BDD (Behavior-Driven Development), unit testing, and clean architecture principles.
+This project demonstrates fundamental software development concepts such as BDD (Behavior-Driven Development), 
+unit testing, and clean architecture principles.
 
 ---
 
@@ -16,13 +17,12 @@ This project demonstrates fundamental software development concepts such as BDD 
 
 - **Todo Management**: Manage To-dos with CRUD operations.
 - **Dependency Injection**: Decouple components for better testability and maintainability.
-- **Rest exceptions Management**: Centralize JSON error response management with RestControllerAdvice for better separation of concerns.
 
 ---
 
 ## 📖 User Stories
 
-- 🆕 [Todo Marking](https://github.com/niolikon/TaskBoard.Service.Boot/issues/1)
+- ✅ [Todo Marking](https://github.com/niolikon/TaskBoard.Service.Boot/issues/1)
 
 ---
 

@@ -5,6 +5,11 @@ spring:
   application:
     name: TaskBoard.Service.Boot
 
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+
   security:
     oauth2:
       resourceserver:

@@ -1,18 +1,33 @@
 server:
   port: 8080
 
+logging:
+  level:
+    com.niolikon.taskboard.framework.test.containers: INFO
+
 spring:
   application:
     name: TaskBoard.Service.Boot
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/taskboard}
+    username: ${SPRING_DATASOURCE_USERNAME:myuser}
+    password: ${SPRING_DATASOURCE_PASSWORD:mypassword}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
 
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${KEYCLOAK_REALM_URI:http://localhost:8081/realms/TodoRealm}
-          jwk-set-uri: ${KEYCLOAK_REALM_URI:http://localhost:8081/realms/TodoRealm}/protocol/openid-connect/certs
+          issuer-uri: ${KEYCLOAK_SERVER_URL:http://localhost:8081}/realms/TodoRealm
+          jwk-set-uri: ${KEYCLOAK_SERVER_URL:http://localhost:8081}/realms/TodoRealm/protocol/openid-connect/certs
 
-keycloak:
-  auth-server-url: ${KEYCLOAK_REALM_URI:http://localhost:8081/realms/TodoRealm}/protocol/openid-connect/token
-  logout-server-url: ${KEYCLOAK_REALM_URI:http://localhost:8081/realms/TodoRealm}/protocol/openid-connect/logout
-  client-id: my-client
+taskboard:
+  exceptions:
+    handler:
+      enabled: true
