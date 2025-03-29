@@ -7,6 +7,7 @@ import com.niolikon.taskboard.framework.test.containers.PostgreSQLTestContainers
 import com.niolikon.taskboard.framework.test.extensions.IsolatedDataJpaTestScenarioExtension;
 import com.niolikon.taskboard.service.todo.dto.TodoView;
 import com.niolikon.taskboard.service.todo.scenarios.SingleTodoTestScenario;
+import com.niolikon.taskboard.service.todo.scenarios.SingleTodoWithFixedDueDateTestScenario;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -86,5 +87,20 @@ class TodoControllerIT {
         List<TodoView> results = Arrays.asList(objectMapper.readValue(jsonResponse, TodoView[].class));
 
         assertThat(results).hasSize(1);
+    }
+
+    @Test
+    @WithIsolatedDataJpaTestScenario(dataClass = SingleTodoWithFixedDueDateTestScenario.class)
+    @Tag("Bugfix=TBS6")
+    void givenSingleTodo_whenReadTodo_thenDueDateIsFormattedCorrectly() throws Exception {
+        mockMvc.perform(
+                        get("/api/Todos/pending")
+                                .with(jwt()
+                                        .jwt(jwt -> jwt.subject(SingleTodoTestScenario.USER_UUID))
+                                        .authorities(new SimpleGrantedAuthority("ROLE_USER")))
+                                .accept(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].DueDate").value(SingleTodoWithFixedDueDateTestScenario.FIXED_DUE_DATE_FORMATTED));
     }
 }
