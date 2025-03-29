@@ -1,6 +1,7 @@
 package com.niolikon.taskboard.service.todo.service;
 
 import com.niolikon.taskboard.framework.exceptions.rest.client.EntityNotFoundRestException;
+import com.niolikon.taskboard.framework.exceptions.rest.client.ForbiddenRestException;
 import com.niolikon.taskboard.service.todo.TodoMapper;
 import com.niolikon.taskboard.service.todo.TodoRepository;
 import com.niolikon.taskboard.service.todo.dto.TodoPatch;
@@ -20,6 +21,7 @@ import java.util.Optional;
 import org.assertj.core.api.Assertions;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -194,6 +196,26 @@ class TodoServiceTest {
 
         assertThat(result).isNotNull();
         assertThat(result).isEqualTo(expectedView);
+        verify(todoRepository, times(0)).save(existingTodo);
+    }
+
+    @Test
+    @Tag("Story=TBS5")
+    @Tag("Scenario=1")
+    void givenTodoCompleted_whenOwnerRequestsAnyModification_thenTodoIsNotUpdated() {
+        Todo existingTodo = Todo.builder()
+                .id(VALID_EXISTENT_TODO_ID).ownerUid(VALID_OWNER_UID)
+                .title("Title").description("Description").isCompleted(Boolean.TRUE).dueDate(Date.from(Instant.now()))
+                .build();
+        when(todoRepository.findByIdAndOwnerUid(VALID_EXISTENT_TODO_ID, VALID_OWNER_UID)).thenReturn(Optional.of(existingTodo));
+        TodoRequest todoModificationRequest = TodoRequest.builder()
+                .title("Updated Title").isCompleted(Boolean.TRUE)
+                .build();
+
+        assertThatThrownBy( () -> todoService.update(VALID_OWNER_UID, VALID_EXISTENT_TODO_ID, todoModificationRequest))
+                .withFailMessage("Cannot modify completed Todo")
+                .isInstanceOf(ForbiddenRestException.class);
+
         verify(todoRepository, times(0)).save(existingTodo);
     }
 
