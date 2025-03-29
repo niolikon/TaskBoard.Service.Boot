@@ -1,6 +1,7 @@
 package com.niolikon.taskboard.service.todo.service;
 
 import com.niolikon.taskboard.framework.exceptions.rest.client.EntityNotFoundRestException;
+import com.niolikon.taskboard.framework.exceptions.rest.client.ForbiddenRestException;
 import com.niolikon.taskboard.service.todo.TodoMapper;
 import com.niolikon.taskboard.service.todo.TodoRepository;
 import com.niolikon.taskboard.service.todo.dto.TodoPatch;
@@ -50,6 +51,9 @@ public class TodoService implements ITodoService {
     public TodoView update(String ownerUid, Long id, TodoRequest todoRequest) {
         Todo todo = todoRepository.findByIdAndOwnerUid(id, ownerUid)
                 .orElseThrow(() -> new EntityNotFoundRestException(TodoService.TODO_NOT_FOUND));
+        if (Boolean.TRUE.equals(todo.getIsCompleted()))  {
+            throw new ForbiddenRestException("Cannot modify completed Todo");
+        }
         todo.updateFrom(todoMapper.toTodo(todoRequest));
         return todoMapper.toTodoView(todoRepository.save(todo));
     }
