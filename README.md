@@ -24,6 +24,8 @@ unit testing, and clean architecture principles.
 
 - ✅ [Todo Marking](https://github.com/niolikon/TaskBoard.Service.Boot/issues/1)
 
+- ✅ [Todo Immutable if completed](https://github.com/niolikon/TaskBoard.Service.Boot/issues/5)
+
 ---
 
 ## 🛠️ Getting Started
