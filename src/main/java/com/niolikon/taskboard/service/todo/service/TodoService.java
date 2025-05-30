@@ -79,6 +79,13 @@ public class TodoService implements ITodoService {
     }
 
     @Override
+    public List<TodoView> readAllCompleted(String ownerUid)
+    {
+        List<Todo> pendingTodos = todoRepository.findByOwnerUidAndIsCompleted(ownerUid, Boolean.TRUE);
+        return pendingTodos.parallelStream().map(todoMapper::toTodoView).toList();
+    }
+
+    @Override
     public void delete(String ownerUid, Long id) {
         Todo todo = todoRepository.findByIdAndOwnerUid(id, ownerUid)
                 .orElseThrow(() -> new EntityNotFoundRestException(TodoService.TODO_NOT_FOUND));

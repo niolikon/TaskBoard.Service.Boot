@@ -79,6 +79,13 @@ public class  TodoController {
         return ok().body(pendingTodos);
     }
 
+    @GetMapping("/completed")
+    public ResponseEntity<List<TodoView>> readAllCompleted(@AuthenticationPrincipal Jwt jwt) {
+        String ownerUid = jwt.getSubject();
+        List<TodoView> pendingTodos = todoService.readAllCompleted(ownerUid);
+        return ok().body(pendingTodos);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@AuthenticationPrincipal Jwt jwt,
                                        @PathVariable("id") Long id) {
