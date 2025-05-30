@@ -19,5 +19,7 @@ public interface ITodoService {
 
     List<TodoView> readAllPending(String ownerUid);
 
+    List<TodoView> readAllCompleted(String ownerUid);
+
     void delete(String ownerUid, Long id);
 }
