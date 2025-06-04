@@ -1,11 +1,14 @@
 package com.niolikon.taskboard.service.todo;
 
+import com.niolikon.taskboard.framework.data.dto.PageResponse;
 import com.niolikon.taskboard.service.todo.dto.TodoPatch;
 import com.niolikon.taskboard.service.todo.dto.TodoRequest;
 import com.niolikon.taskboard.service.todo.dto.TodoView;
 import com.niolikon.taskboard.service.todo.service.ITodoService;
 
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import static org.springframework.http.ResponseEntity.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/Todos")
@@ -40,9 +42,10 @@ public class  TodoController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TodoView>> readAll(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<PageResponse<TodoView>> readAll(@AuthenticationPrincipal Jwt jwt,
+                                                          @PageableDefault Pageable pageable) {
         String ownerUid = jwt.getSubject();
-        List<TodoView> userTodos = todoService.readAll(ownerUid);
+        PageResponse<TodoView> userTodos = todoService.readAll(ownerUid, pageable);
         return ok().body(userTodos);
     }
 
@@ -73,16 +76,18 @@ public class  TodoController {
     }
 
     @GetMapping("/pending")
-    public ResponseEntity<List<TodoView>> readAllPending(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<PageResponse<TodoView>> readAllPending(@AuthenticationPrincipal Jwt jwt,
+                                                         @PageableDefault Pageable pageable) {
         String ownerUid = jwt.getSubject();
-        List<TodoView> pendingTodos = todoService.readAllPending(ownerUid);
+        PageResponse<TodoView> pendingTodos = todoService.readAllPending(ownerUid, pageable);
         return ok().body(pendingTodos);
     }
 
     @GetMapping("/completed")
-    public ResponseEntity<List<TodoView>> readAllCompleted(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<PageResponse<TodoView>> readAllCompleted(@AuthenticationPrincipal Jwt jwt,
+                                                           @PageableDefault Pageable pageable) {
         String ownerUid = jwt.getSubject();
-        List<TodoView> pendingTodos = todoService.readAllCompleted(ownerUid);
+        PageResponse<TodoView> pendingTodos = todoService.readAllCompleted(ownerUid, pageable);
         return ok().body(pendingTodos);
     }
 

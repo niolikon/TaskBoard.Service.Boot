@@ -1,5 +1,6 @@
 package com.niolikon.taskboard.service.todo.service;
 
+import com.niolikon.taskboard.framework.data.dto.PageResponse;
 import com.niolikon.taskboard.framework.exceptions.rest.client.EntityNotFoundRestException;
 import com.niolikon.taskboard.framework.exceptions.rest.client.ForbiddenRestException;
 import com.niolikon.taskboard.service.todo.TodoMapper;
@@ -9,9 +10,10 @@ import com.niolikon.taskboard.service.todo.dto.TodoRequest;
 import com.niolikon.taskboard.service.todo.dto.TodoView;
 import com.niolikon.taskboard.service.todo.model.Todo;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Objects;
 
 @Service
@@ -35,9 +37,9 @@ public class TodoService implements ITodoService {
     }
 
     @Override
-    public List<TodoView> readAll(String ownerUid) {
-        List<Todo> todos = todoRepository.findByOwnerUid(ownerUid);
-        return todos.stream().map(todoMapper::toTodoView).toList();
+    public PageResponse<TodoView> readAll(String ownerUid, Pageable pageable) {
+        Page<Todo> todos = todoRepository.findByOwnerUid(ownerUid, pageable);
+        return new PageResponse<>(todos.map(todoMapper::toTodoView));
     }
 
     @Override
@@ -72,17 +74,17 @@ public class TodoService implements ITodoService {
     }
 
     @Override
-    public List<TodoView> readAllPending(String ownerUid)
+    public PageResponse<TodoView> readAllPending(String ownerUid, Pageable pageable)
     {
-        List<Todo> pendingTodos = todoRepository.findByOwnerUidAndIsCompleted(ownerUid, Boolean.FALSE);
-        return pendingTodos.parallelStream().map(todoMapper::toTodoView).toList();
+        Page<Todo> pendingTodos = todoRepository.findByOwnerUidAndIsCompleted(ownerUid, Boolean.FALSE, pageable);
+        return new PageResponse<>(pendingTodos.map(todoMapper::toTodoView));
     }
 
     @Override
-    public List<TodoView> readAllCompleted(String ownerUid)
+    public PageResponse<TodoView> readAllCompleted(String ownerUid, Pageable pageable)
     {
-        List<Todo> pendingTodos = todoRepository.findByOwnerUidAndIsCompleted(ownerUid, Boolean.TRUE);
-        return pendingTodos.parallelStream().map(todoMapper::toTodoView).toList();
+        Page<Todo> pendingTodos = todoRepository.findByOwnerUidAndIsCompleted(ownerUid, Boolean.TRUE, pageable);
+        return new PageResponse<>(pendingTodos.map(todoMapper::toTodoView));
     }
 
     @Override

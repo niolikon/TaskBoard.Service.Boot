@@ -1,5 +1,6 @@
 package com.niolikon.taskboard.service.todo;
 
+import com.niolikon.taskboard.framework.data.dto.PageResponse;
 import com.niolikon.taskboard.service.todo.dto.TodoPatch;
 import com.niolikon.taskboard.service.todo.dto.TodoRequest;
 import com.niolikon.taskboard.service.todo.dto.TodoView;
@@ -7,6 +8,10 @@ import com.niolikon.taskboard.service.todo.service.ITodoService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -24,6 +29,7 @@ import static org.springframework.http.HttpStatus.*;
 
 class TodoControllerTest {
     private static final String STUB_JWT_CLAIMS_SUBJECT = "test-user-uid-very-long-and-unique";
+    private static final Pageable PAGEABLE_FIRST_PAGE_WITH_TEN_ELEMENTS = PageRequest.of(0, 10);
 
     private ITodoService todoService;
     private TodoController todoController;
@@ -62,13 +68,15 @@ class TodoControllerTest {
         List<TodoView> todos = List.of(
                 new TodoView(1L, "Task 1", "Description 1", false, Date.from(Instant.now())),
                 new TodoView(2L, "Task 2", "Description 2", true, Date.from(Instant.now())));
-        when(todoService.readAll(anyString())).thenReturn(todos);
+        Page<TodoView> todosPage = new PageImpl<>(todos, PAGEABLE_FIRST_PAGE_WITH_TEN_ELEMENTS, todos.size());
+        PageResponse<TodoView> todosPageResponse = new PageResponse<>(todosPage);
+        when(todoService.readAll(anyString(), eq(PAGEABLE_FIRST_PAGE_WITH_TEN_ELEMENTS))).thenReturn(todosPageResponse);
 
-        ResponseEntity<List<TodoView>> response = todoController.readAll(stubJwt);
+        ResponseEntity<PageResponse<TodoView>> response = todoController.readAll(stubJwt, PAGEABLE_FIRST_PAGE_WITH_TEN_ELEMENTS);
 
         assertThat(response.getStatusCode()).isEqualTo(OK);
-        assertThat(response.getBody()).isEqualTo(todos);
-        verify(todoService, times(1)).readAll(STUB_JWT_CLAIMS_SUBJECT);
+        assertThat(response.getBody()).isEqualTo(todosPageResponse);
+        verify(todoService, times(1)).readAll(STUB_JWT_CLAIMS_SUBJECT, PAGEABLE_FIRST_PAGE_WITH_TEN_ELEMENTS);
     }
 
     @Test
@@ -125,13 +133,15 @@ class TodoControllerTest {
                 new TodoView(1L, "Title", "A Description", Boolean.TRUE, Date.from(Instant.now())),
                 new TodoView(5L, "Title", "Another Description", Boolean.TRUE, Date.from(Instant.now()))
                 );
-        when(todoService.readAllPending(anyString())).thenReturn(pendingTodos);
+        Page<TodoView> pendingTodosPage = new PageImpl<>(pendingTodos, PAGEABLE_FIRST_PAGE_WITH_TEN_ELEMENTS, pendingTodos.size());
+        PageResponse<TodoView> pendingTodosPageResponse = new PageResponse<>(pendingTodosPage);
+        when(todoService.readAllPending(anyString(), eq(PAGEABLE_FIRST_PAGE_WITH_TEN_ELEMENTS))).thenReturn(pendingTodosPageResponse);
 
-        ResponseEntity<List<TodoView>> response = todoController.readAllPending(stubJwt);
+        ResponseEntity<PageResponse<TodoView>> response = todoController.readAllPending(stubJwt, PAGEABLE_FIRST_PAGE_WITH_TEN_ELEMENTS);
 
         assertThat(response.getStatusCode()).isEqualTo(OK);
-        assertThat(response.getBody()).isEqualTo(pendingTodos);
-        verify(todoService, times(1)).readAllPending(STUB_JWT_CLAIMS_SUBJECT);
+        assertThat(response.getBody()).isEqualTo(pendingTodosPageResponse);
+        verify(todoService, times(1)).readAllPending(STUB_JWT_CLAIMS_SUBJECT, PAGEABLE_FIRST_PAGE_WITH_TEN_ELEMENTS);
     }
 
     @Test
