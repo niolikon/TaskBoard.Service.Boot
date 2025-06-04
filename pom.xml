@@ -11,7 +11,7 @@
 	<groupId>com.github.niolikon</groupId>
 	<artifactId>taskboard-service-boot</artifactId>
 	<packaging>jar</packaging>
-	<version>0.0.3</version>
+	<version>0.0.4</version>
 	<name>TaskBoard.Service.Boot</name>
 	<description>Task Board Service (Spring Case Study)</description>
 	<url>https://github.com/niolikon/TaskBoard.Service.Boot</url>
