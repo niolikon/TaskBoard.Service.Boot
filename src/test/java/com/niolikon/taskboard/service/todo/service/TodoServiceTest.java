@@ -1,5 +1,6 @@
 package com.niolikon.taskboard.service.todo.service;
 
+import com.niolikon.taskboard.framework.data.dto.PageResponse;
 import com.niolikon.taskboard.framework.exceptions.rest.client.EntityNotFoundRestException;
 import com.niolikon.taskboard.framework.exceptions.rest.client.ForbiddenRestException;
 import com.niolikon.taskboard.service.todo.TodoMapper;
@@ -19,6 +20,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import org.assertj.core.api.Assertions;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -30,6 +35,7 @@ class TodoServiceTest {
     private static final String VALID_OWNER_UID = "user-123";
     private static final Long VALID_EXISTENT_TODO_ID = 1L;
     private static final Long VALID_NON_EXISTENT_TODO_ID = 111L;
+    private static final Pageable VALID_FIRST_PAGE = PageRequest.of(0, 10);
 
     private TodoRepository todoRepository;
     private TodoMapper todoMapper;
@@ -66,18 +72,19 @@ class TodoServiceTest {
     @Test
     void givenTodosExist_whenReadAll_thenReturnsTodoViewList() {
         List<Todo> todos = List.of(new Todo(), new Todo());
-        when(todoRepository.findByOwnerUid(VALID_OWNER_UID)).thenReturn(todos);
+        Page<Todo> todosPaged = new PageImpl<>(todos, VALID_FIRST_PAGE, todos.size());
+        when(todoRepository.findByOwnerUid(VALID_OWNER_UID, VALID_FIRST_PAGE)).thenReturn(todosPaged);
         List<TodoView> expectedViews = List.of(
                 new TodoView(1L, "Task 1", "Desc 1", false, Date.from(Instant.now())),
                 new TodoView(2L, "Task 2", "Desc 2", true, Date.from(Instant.now()))
         );
         when(todoMapper.toTodoView(any(Todo.class))).thenReturn(expectedViews.get(0), expectedViews.get(1));
 
-        List<TodoView> result = todoService.readAll(VALID_OWNER_UID);
+        PageResponse<TodoView> result = todoService.readAll(VALID_OWNER_UID, VALID_FIRST_PAGE);
 
         assertThat(result).isNotNull();
-        assertThat(result).isEqualTo(expectedViews);
-        verify(todoRepository, times(1)).findByOwnerUid(VALID_OWNER_UID);
+        assertThat(result.getContent()).isEqualTo(expectedViews);
+        verify(todoRepository, times(1)).findByOwnerUid(VALID_OWNER_UID, VALID_FIRST_PAGE);
     }
 
     @Test
@@ -234,18 +241,84 @@ class TodoServiceTest {
     @Tag("Story=TBS1")
     void givenPendingTodosExist_whenReadAllPending_thenReturnsTodoViewList() {
         List<Todo> pendingTodos = List.of(new Todo(), new Todo());
-        when(todoRepository.findByOwnerUidAndIsCompleted(VALID_OWNER_UID, Boolean.FALSE)).thenReturn(pendingTodos);
+        Page<Todo> pendingTodosPaged = new PageImpl<>(pendingTodos, VALID_FIRST_PAGE, pendingTodos.size());
+        when(todoRepository.findByOwnerUidAndIsCompleted(VALID_OWNER_UID, Boolean.FALSE, VALID_FIRST_PAGE)).thenReturn(pendingTodosPaged);
         List<TodoView> expectedViews = List.of(
                 new TodoView(1L, "Task 1", "Desc 1", false, Date.from(Instant.now())),
                 new TodoView(2L, "Task 2", "Desc 2", false, Date.from(Instant.now()))
         );
         when(todoMapper.toTodoView(any(Todo.class))).thenReturn(expectedViews.get(0), expectedViews.get(1));
 
-        List<TodoView> result = todoService.readAllPending(VALID_OWNER_UID);
+        PageResponse<TodoView> result = todoService.readAllPending(VALID_OWNER_UID, VALID_FIRST_PAGE);
 
         assertThat(result).isNotNull();
-        Assertions.assertThat(result).containsExactlyInAnyOrderElementsOf(expectedViews);
-        verify(todoRepository, times(1)).findByOwnerUidAndIsCompleted(VALID_OWNER_UID, Boolean.FALSE);
+        Assertions.assertThat(result.getContent()).containsExactlyInAnyOrderElementsOf(expectedViews);
+        verify(todoRepository, times(1)).findByOwnerUidAndIsCompleted(VALID_OWNER_UID, Boolean.FALSE, VALID_FIRST_PAGE);
+    }
+
+    @Test
+    @Tag("Story=TBS8")
+    @Tag("Scenario=1")
+    void givenMoreTodosThanPageSize_whenClientRequestsFirstPage_thenReturnsFirstPageWithMetadata() {
+        Pageable firstPage = PageRequest.of(0, 2);
+        List<Todo> todos = List.of(new Todo(), new Todo());
+        Page<Todo> todosPaged = new PageImpl<>(todos, firstPage, 5);
+        when(todoRepository.findByOwnerUid(VALID_OWNER_UID, firstPage)).thenReturn(todosPaged);
+        when(todoMapper.toTodoView(any(Todo.class))).thenReturn(
+                new TodoView(1L, "Task 1", "Desc 1", false, Date.from(Instant.now())),
+                new TodoView(2L, "Task 2", "Desc 2", false, Date.from(Instant.now()))
+        );
+
+        PageResponse<TodoView> result = todoService.readAll(VALID_OWNER_UID, firstPage);
+
+        Assertions.assertThat(result.getContent()).hasSize(2);
+        assertThat(result)
+                .extracting(
+                        PageResponse::getElementsSize,
+                        PageResponse::getElementsTotal,
+                        PageResponse::getPageNumber,
+                        PageResponse::getPageSize,
+                        PageResponse::getPageTotal,
+                        PageResponse::isFirst,
+                        PageResponse::isLast,
+                        PageResponse::isEmpty
+                )
+                .containsExactly(2, 5L, 0, 2, 3, true, false, false);
+
+        verify(todoRepository).findByOwnerUid(VALID_OWNER_UID, firstPage);
+    }
+
+    @Test
+    @Tag("Story=TBS8")
+    @Tag("Scenario=2")
+    void givenMultiplePagesExist_whenClientRequestsSpecificPage_thenCorrectPageReturnedWithMetadata() {
+        Pageable secondPage = PageRequest.of(1, 2);
+        List<Todo> todos = List.of(new Todo(), new Todo());
+        Page<Todo> todosPaged = new PageImpl<>(todos, secondPage, 5);
+
+        when(todoRepository.findByOwnerUid(VALID_OWNER_UID, secondPage)).thenReturn(todosPaged);
+        when(todoMapper.toTodoView(any(Todo.class))).thenReturn(
+                new TodoView(3L, "Task 3", "Desc 3", false, Date.from(Instant.now())),
+                new TodoView(4L, "Task 4", "Desc 4", false, Date.from(Instant.now()))
+        );
+
+        PageResponse<TodoView> result = todoService.readAll(VALID_OWNER_UID, secondPage);
+
+        Assertions.assertThat(result.getContent()).hasSize(2);
+        assertThat(result)
+                .extracting(
+                        PageResponse::getElementsSize,
+                        PageResponse::getElementsTotal,
+                        PageResponse::getPageNumber,
+                        PageResponse::getPageSize,
+                        PageResponse::getPageTotal,
+                        PageResponse::isFirst,
+                        PageResponse::isLast,
+                        PageResponse::isEmpty
+                )
+                .containsExactly(2, 5L, 1, 2, 3, false, false, false);
+
+        verify(todoRepository).findByOwnerUid(VALID_OWNER_UID, secondPage);
     }
 
     @Test
