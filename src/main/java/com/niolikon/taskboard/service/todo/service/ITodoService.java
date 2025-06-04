@@ -1,15 +1,15 @@
 package com.niolikon.taskboard.service.todo.service;
 
+import com.niolikon.taskboard.framework.data.dto.PageResponse;
 import com.niolikon.taskboard.service.todo.dto.TodoPatch;
 import com.niolikon.taskboard.service.todo.dto.TodoRequest;
 import com.niolikon.taskboard.service.todo.dto.TodoView;
-
-import java.util.List;
+import org.springframework.data.domain.Pageable;
 
 public interface ITodoService {
     TodoView create(String ownerUid, TodoRequest todoRequest);
 
-    List<TodoView> readAll(String ownerUid);
+    PageResponse<TodoView> readAll(String ownerUid, Pageable pageable);
 
     TodoView read(String ownerUid, Long id);
 
@@ -17,9 +17,9 @@ public interface ITodoService {
 
     TodoView patch(String ownerUid, Long id, TodoPatch todoPatch);
 
-    List<TodoView> readAllPending(String ownerUid);
+    PageResponse<TodoView> readAllPending(String ownerUid, Pageable pageable);
 
-    List<TodoView> readAllCompleted(String ownerUid);
+    PageResponse<TodoView> readAllCompleted(String ownerUid, Pageable pageable);
 
     void delete(String ownerUid, Long id);
 }
