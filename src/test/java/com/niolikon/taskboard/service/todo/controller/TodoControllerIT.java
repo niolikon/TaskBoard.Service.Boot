@@ -1,4 +1,4 @@
-package com.niolikon.taskboard.service.todo;
+package com.niolikon.taskboard.service.todo.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -8,9 +8,9 @@ import com.niolikon.taskboard.framework.test.annotations.WithIsolatedDataJpaTest
 import com.niolikon.taskboard.framework.test.containers.PostgreSQLTestContainersConfig;
 import com.niolikon.taskboard.framework.test.extensions.IsolatedDataJpaTestScenarioExtension;
 import com.niolikon.taskboard.service.todo.dto.TodoView;
-import com.niolikon.taskboard.service.todo.scenarios.MultipleTodosWithPaginationTestScenario;
-import com.niolikon.taskboard.service.todo.scenarios.SingleTodoTestScenario;
-import com.niolikon.taskboard.service.todo.scenarios.SingleTodoWithFixedDueDateTestScenario;
+import com.niolikon.taskboard.service.todo.controller.scenarios.MultipleTodosWithPaginationTestScenario;
+import com.niolikon.taskboard.service.todo.controller.scenarios.SingleTodoTestScenario;
+import com.niolikon.taskboard.service.todo.controller.scenarios.SingleTodoWithFixedDueDateTestScenario;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +23,8 @@ import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static com.niolikon.taskboard.service.todo.controller.TodoApiPaths.*;
+import static com.niolikon.taskboard.service.todo.controller.testdata.TodoControllerTestData.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -43,10 +45,10 @@ class TodoControllerIT {
     @Tag("Scenario=1")
     void givenSingleTodo_whenReadAll_thenListWithSingleTodoIsReturned() throws Exception {
         String jsonResponse = mockMvc.perform(
-                get("/api/Todos")
+                get(API_PATH_TODO_BASE)
                         .with(jwt()
                                 .jwt(jwt -> jwt.subject(SingleTodoTestScenario.USER_UUID))
-                                .authorities(new SimpleGrantedAuthority("ROLE_USER")))
+                                .authorities(new SimpleGrantedAuthority(VALID_USER_ROLE)))
                         .accept(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isOk())
@@ -73,10 +75,10 @@ class TodoControllerIT {
     @Tag("Scenario=1")
     void givenSingleTodo_whenReadAllPending_thenSingleTodoIsReturned() throws Exception {
         String jsonResponse = mockMvc.perform(
-                        get("/api/Todos/pending")
+                        get(API_PATH_TODO_PENDING)
                                 .with(jwt()
                                         .jwt(jwt -> jwt.subject(SingleTodoTestScenario.USER_UUID))
-                                        .authorities(new SimpleGrantedAuthority("ROLE_USER")))
+                                        .authorities(new SimpleGrantedAuthority(VALID_USER_ROLE)))
                                 .accept(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isOk())
@@ -102,10 +104,10 @@ class TodoControllerIT {
     @Tag("Bugfix=TBS6")
     void givenSingleTodo_whenReadTodo_thenDueDateIsFormattedCorrectly() throws Exception {
         mockMvc.perform(
-                        get("/api/Todos/pending")
+                        get(API_PATH_TODO_PENDING)
                                 .with(jwt()
                                         .jwt(jwt -> jwt.subject(SingleTodoTestScenario.USER_UUID))
-                                        .authorities(new SimpleGrantedAuthority("ROLE_USER")))
+                                        .authorities(new SimpleGrantedAuthority(VALID_USER_ROLE)))
                                 .accept(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isOk())
@@ -118,12 +120,12 @@ class TodoControllerIT {
     @Tag("Scenario=1")
     void givenMoreTodosThenPageSize_whenFetchingTodosWithPagination_thenSystemReturnsTheFirstSubsetWithPaginationMetadata() throws Exception {
         mockMvc.perform(
-                        get("/api/Todos/pending")
+                        get(API_PATH_TODO_PENDING)
                                 .param("page", String.valueOf(MultipleTodosWithPaginationTestScenario.SAMPLE_QUERY1.getPageNumber()))
                                 .param("size", String.valueOf(MultipleTodosWithPaginationTestScenario.SAMPLE_QUERY1.getPageSize()))
                                 .with(jwt()
                                         .jwt(jwt -> jwt.subject(SingleTodoTestScenario.USER_UUID))
-                                        .authorities(new SimpleGrantedAuthority("ROLE_USER"))
+                                        .authorities(new SimpleGrantedAuthority(VALID_USER_ROLE))
                                 )
                                 .accept(MediaType.APPLICATION_JSON)
                 )
@@ -146,12 +148,12 @@ class TodoControllerIT {
     @Tag("Scenario=2")
     void givenMultiplePagesOfTodosExist_whenTheClientRequestsSpecificPageNumber_thenSystemReturnsTheCorrectPageWithPaginationMetadata() throws Exception {
         mockMvc.perform(
-                        get("/api/Todos/pending")
+                        get(API_PATH_TODO_PENDING)
                                 .param("page", String.valueOf(MultipleTodosWithPaginationTestScenario.SAMPLE_QUERY2.getPageNumber()))
                                 .param("size", String.valueOf(MultipleTodosWithPaginationTestScenario.SAMPLE_QUERY2.getPageSize()))
                                 .with(jwt()
                                         .jwt(jwt -> jwt.subject(SingleTodoTestScenario.USER_UUID))
-                                        .authorities(new SimpleGrantedAuthority("ROLE_USER"))
+                                        .authorities(new SimpleGrantedAuthority(VALID_USER_ROLE))
                                 )
                                 .accept(MediaType.APPLICATION_JSON)
                 )

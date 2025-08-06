@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class TodoServiceTest {
+class TodoServiceUnitTest {
     private static final String VALID_OWNER_UID = "user-123";
     private static final Long VALID_EXISTENT_TODO_ID = 1L;
     private static final Long VALID_NON_EXISTENT_TODO_ID = 111L;
