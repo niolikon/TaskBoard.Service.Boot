@@ -1,4 +1,4 @@
-package com.niolikon.taskboard.service.todo.scenarios;
+package com.niolikon.taskboard.service.todo.controller.scenarios;
 
 import com.niolikon.taskboard.service.todo.model.Todo;
 import org.springframework.data.domain.PageRequest;
