@@ -27,7 +27,6 @@ import org.springframework.data.domain.Pageable;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -107,7 +106,7 @@ class TodoServiceUnitTest {
     void givenNonExistingTodo_whenRead_thenThrowsException() {
         when(todoRepository.findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundRestException.class, () -> todoService.read(VALID_OWNER_UID, VALID_NON_EXISTENT_TODO_ID));
+        assertThatThrownBy(() -> todoService.read(VALID_OWNER_UID, VALID_NON_EXISTENT_TODO_ID)).isInstanceOf(EntityNotFoundRestException.class);
         verify(todoRepository, times(1)).findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID);
     }
 
@@ -139,7 +138,7 @@ class TodoServiceUnitTest {
                 .title("Updated Task").description("Updated Desc").build();
         when(todoRepository.findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundRestException.class, () -> todoService.update(VALID_OWNER_UID, VALID_NON_EXISTENT_TODO_ID, updateRequest));
+        assertThatThrownBy(() -> todoService.update(VALID_OWNER_UID, VALID_NON_EXISTENT_TODO_ID, updateRequest)).isInstanceOf(EntityNotFoundRestException.class);
         verify(todoRepository, times(1)).findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID);
     }
 
@@ -203,7 +202,7 @@ class TodoServiceUnitTest {
 
         assertThat(result).isNotNull();
         assertThat(result).isEqualTo(expectedView);
-        verify(todoRepository, times(0)).save(existingTodo);
+        verify(todoRepository, never()).save(existingTodo);
     }
 
     @Test
@@ -223,7 +222,7 @@ class TodoServiceUnitTest {
                 .withFailMessage("Cannot modify completed Todo")
                 .isInstanceOf(ForbiddenRestException.class);
 
-        verify(todoRepository, times(0)).save(existingTodo);
+        verify(todoRepository, never()).save(existingTodo);
     }
 
     @Test
@@ -233,7 +232,7 @@ class TodoServiceUnitTest {
                 .isCompleted(Boolean.TRUE).build();
         when(todoRepository.findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundRestException.class, () -> todoService.patch(VALID_OWNER_UID, VALID_NON_EXISTENT_TODO_ID, todoPatch));
+        assertThatThrownBy(() -> todoService.patch(VALID_OWNER_UID, VALID_NON_EXISTENT_TODO_ID, todoPatch)).isInstanceOf(EntityNotFoundRestException.class);
         verify(todoRepository, times(1)).findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID);
     }
 
@@ -336,7 +335,7 @@ class TodoServiceUnitTest {
     void givenNonExistingTodo_whenDelete_thenThrowsException() {
         when(todoRepository.findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundRestException.class, () -> todoService.delete(VALID_OWNER_UID, VALID_NON_EXISTENT_TODO_ID));
+        assertThatThrownBy(() -> todoService.delete(VALID_OWNER_UID, VALID_NON_EXISTENT_TODO_ID)).isInstanceOf(EntityNotFoundRestException.class);
         verify(todoRepository, times(1)).findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID);
     }
 }
