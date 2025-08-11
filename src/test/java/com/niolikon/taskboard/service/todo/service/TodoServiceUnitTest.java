@@ -49,6 +49,7 @@ class TodoServiceUnitTest {
 
     @Test
     void givenValidTodoRequest_whenCreate_thenReturnsTodoView() {
+        // Arrange
         TodoRequest request = TodoRequest.builder()
                 .title("New Task").description("Task Description").isCompleted(false).build();
         Todo todo = Todo.builder()
@@ -61,8 +62,10 @@ class TodoServiceUnitTest {
                 .title("New Task").description("Task Description").isCompleted(false).id(VALID_EXISTENT_TODO_ID).build();
         when(todoMapper.toTodoView(savedTodo)).thenReturn(expectedView);
 
+        // Act
         TodoView result = todoService.create(VALID_OWNER_UID, request);
 
+        // Assert
         assertThat(result).isNotNull();
         assertThat(result).isEqualTo(expectedView);
         verify(todoRepository, times(1)).save(todo);
@@ -70,6 +73,7 @@ class TodoServiceUnitTest {
 
     @Test
     void givenTodosExist_whenReadAll_thenReturnsTodoViewList() {
+        // Arrange
         List<Todo> todos = List.of(new Todo(), new Todo());
         Page<Todo> todosPaged = new PageImpl<>(todos, VALID_FIRST_PAGE, todos.size());
         when(todoRepository.findByOwnerUid(VALID_OWNER_UID, VALID_FIRST_PAGE)).thenReturn(todosPaged);
@@ -79,8 +83,10 @@ class TodoServiceUnitTest {
         );
         when(todoMapper.toTodoView(any(Todo.class))).thenReturn(expectedViews.get(0), expectedViews.get(1));
 
+        // Act
         PageResponse<TodoView> result = todoService.readAll(VALID_OWNER_UID, VALID_FIRST_PAGE);
 
+        // Assert
         assertThat(result).isNotNull();
         assertThat(result.getContent()).isEqualTo(expectedViews);
         verify(todoRepository, times(1)).findByOwnerUid(VALID_OWNER_UID, VALID_FIRST_PAGE);
@@ -88,6 +94,7 @@ class TodoServiceUnitTest {
 
     @Test
     void givenExistingTodo_whenRead_thenReturnsTodoView() {
+        // Arrange
         Todo todo = Todo.builder()
                 .id(VALID_EXISTENT_TODO_ID).ownerUid(VALID_OWNER_UID).build();
         when(todoRepository.findByIdAndOwnerUid(VALID_EXISTENT_TODO_ID, VALID_OWNER_UID)).thenReturn(Optional.of(todo));
@@ -95,8 +102,10 @@ class TodoServiceUnitTest {
                 .id(VALID_EXISTENT_TODO_ID).title("Existing Task").description("Existing Desc").build();
         when(todoMapper.toTodoView(todo)).thenReturn(expectedView);
 
+        // Act
         TodoView result = todoService.read(VALID_OWNER_UID, VALID_EXISTENT_TODO_ID);
 
+        // Assert
         assertThat(result).isNotNull();
         assertThat(result).isEqualTo((expectedView));
         verify(todoRepository, times(1)).findByIdAndOwnerUid(VALID_EXISTENT_TODO_ID, VALID_OWNER_UID);
@@ -104,14 +113,17 @@ class TodoServiceUnitTest {
 
     @Test
     void givenNonExistingTodo_whenRead_thenThrowsException() {
+        // Arrange
         when(todoRepository.findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID)).thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThatThrownBy(() -> todoService.read(VALID_OWNER_UID, VALID_NON_EXISTENT_TODO_ID)).isInstanceOf(EntityNotFoundRestException.class);
         verify(todoRepository, times(1)).findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID);
     }
 
     @Test
     void givenValidTodoRequest_whenUpdate_thenReturnsUpdatedTodoView() {
+        // Arrange
         Todo existingTodo = Todo.builder()
                 .id(VALID_EXISTENT_TODO_ID).ownerUid(VALID_OWNER_UID).build();
         when(todoRepository.findByIdAndOwnerUid(VALID_EXISTENT_TODO_ID, VALID_OWNER_UID)).thenReturn(Optional.of(existingTodo));
@@ -125,8 +137,10 @@ class TodoServiceUnitTest {
                 .id(VALID_EXISTENT_TODO_ID).title("Updated Task").description("Updated Desc").build();
         when(todoMapper.toTodoView(updatedTodo)).thenReturn(expectedView);
 
+        // Act
         TodoView result = todoService.update(VALID_OWNER_UID, VALID_EXISTENT_TODO_ID, updateRequest);
 
+        // Assert
         assertThat(result).isNotNull();
         assertThat(result).isEqualTo(expectedView);
         verify(todoRepository, times(1)).save(existingTodo);
@@ -134,10 +148,12 @@ class TodoServiceUnitTest {
 
     @Test
     void givenNonExistingTodo_whenUpdate_thenThrowsException() {
+        // Arrange
         TodoRequest updateRequest = TodoRequest.builder()
                 .title("Updated Task").description("Updated Desc").build();
         when(todoRepository.findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID)).thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThatThrownBy(() -> todoService.update(VALID_OWNER_UID, VALID_NON_EXISTENT_TODO_ID, updateRequest)).isInstanceOf(EntityNotFoundRestException.class);
         verify(todoRepository, times(1)).findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID);
     }
@@ -146,6 +162,7 @@ class TodoServiceUnitTest {
     @Tag("Story=TBS1")
     @Tag("Scenario=1")
     void givenTodoNotCompleted_whenOwnerRequestsMarkingComplete_thenTodoIsPatched() {
+        // Arrange
         Todo existingTodo = Todo.builder()
                 .id(VALID_EXISTENT_TODO_ID).ownerUid(VALID_OWNER_UID)
                 .title("Title").description("Description").isCompleted(Boolean.FALSE).dueDate(Date.from(Instant.now()))
@@ -172,8 +189,10 @@ class TodoServiceUnitTest {
                 .build();
         when(todoMapper.toTodoView(patchedTodo)).thenReturn(expectedView);
 
+        // Act
         TodoView result = todoService.patch(VALID_OWNER_UID, VALID_EXISTENT_TODO_ID, todoPatch);
 
+        // Assert
         assertThat(result).isNotNull();
         assertThat(result).isEqualTo(expectedView);
         verify(todoRepository, times(1)).save(existingTodo);
@@ -183,6 +202,7 @@ class TodoServiceUnitTest {
     @Tag("Story=TBS1")
     @Tag("Scenario=2")
     void givenTodoCompleted_whenOwnerRequestsMarkingComplete_thenTodoIsNotPatched() {
+        // Arrange
         Todo existingTodo = Todo.builder()
                 .id(VALID_EXISTENT_TODO_ID).ownerUid(VALID_OWNER_UID)
                 .title("Title").description("Description").isCompleted(Boolean.TRUE).dueDate(Date.from(Instant.now()))
@@ -198,8 +218,10 @@ class TodoServiceUnitTest {
                 .build();
         when(todoMapper.toTodoView(existingTodo)).thenReturn(expectedView);
 
+        // Act
         TodoView result = todoService.patch(VALID_OWNER_UID, VALID_EXISTENT_TODO_ID, todoPatch);
 
+        // Assert
         assertThat(result).isNotNull();
         assertThat(result).isEqualTo(expectedView);
         verify(todoRepository, never()).save(existingTodo);
@@ -209,6 +231,7 @@ class TodoServiceUnitTest {
     @Tag("Story=TBS5")
     @Tag("Scenario=1")
     void givenTodoCompleted_whenOwnerRequestsAnyModification_thenTodoIsNotUpdated() {
+        // Arrange
         Todo existingTodo = Todo.builder()
                 .id(VALID_EXISTENT_TODO_ID).ownerUid(VALID_OWNER_UID)
                 .title("Title").description("Description").isCompleted(Boolean.TRUE).dueDate(Date.from(Instant.now()))
@@ -218,20 +241,22 @@ class TodoServiceUnitTest {
                 .title("Updated Title").isCompleted(Boolean.TRUE)
                 .build();
 
+        // Act & Assert
         assertThatThrownBy( () -> todoService.update(VALID_OWNER_UID, VALID_EXISTENT_TODO_ID, todoModificationRequest))
                 .withFailMessage("Cannot modify completed Todo")
                 .isInstanceOf(ForbiddenRestException.class);
-
         verify(todoRepository, never()).save(existingTodo);
     }
 
     @Test
     @Tag("Story=TBS1")
     void givenNonExistingTodo_whenPatch_thenThrowsException() {
+        // Arrange
         TodoPatch todoPatch = TodoPatch.builder()
                 .isCompleted(Boolean.TRUE).build();
         when(todoRepository.findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID)).thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThatThrownBy(() -> todoService.patch(VALID_OWNER_UID, VALID_NON_EXISTENT_TODO_ID, todoPatch)).isInstanceOf(EntityNotFoundRestException.class);
         verify(todoRepository, times(1)).findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID);
     }
@@ -239,6 +264,7 @@ class TodoServiceUnitTest {
     @Test
     @Tag("Story=TBS1")
     void givenPendingTodosExist_whenReadAllPending_thenReturnsTodoViewList() {
+        // Arrange
         List<Todo> pendingTodos = List.of(new Todo(), new Todo());
         Page<Todo> pendingTodosPaged = new PageImpl<>(pendingTodos, VALID_FIRST_PAGE, pendingTodos.size());
         when(todoRepository.findByOwnerUidAndIsCompleted(VALID_OWNER_UID, Boolean.FALSE, VALID_FIRST_PAGE)).thenReturn(pendingTodosPaged);
@@ -248,8 +274,10 @@ class TodoServiceUnitTest {
         );
         when(todoMapper.toTodoView(any(Todo.class))).thenReturn(expectedViews.get(0), expectedViews.get(1));
 
+        // Act
         PageResponse<TodoView> result = todoService.readAllPending(VALID_OWNER_UID, VALID_FIRST_PAGE);
 
+        // Assert
         assertThat(result).isNotNull();
         Assertions.assertThat(result.getContent()).containsExactlyInAnyOrderElementsOf(expectedViews);
         verify(todoRepository, times(1)).findByOwnerUidAndIsCompleted(VALID_OWNER_UID, Boolean.FALSE, VALID_FIRST_PAGE);
@@ -259,6 +287,7 @@ class TodoServiceUnitTest {
     @Tag("Story=TBS8")
     @Tag("Scenario=1")
     void givenMoreTodosThanPageSize_whenClientRequestsFirstPage_thenReturnsFirstPageWithMetadata() {
+        // Arrange
         Pageable firstPage = PageRequest.of(0, 2);
         List<Todo> todos = List.of(new Todo(), new Todo());
         Page<Todo> todosPaged = new PageImpl<>(todos, firstPage, 5);
@@ -268,8 +297,10 @@ class TodoServiceUnitTest {
                 new TodoView(2L, "Task 2", "Desc 2", false, Date.from(Instant.now()))
         );
 
+        // Act
         PageResponse<TodoView> result = todoService.readAll(VALID_OWNER_UID, firstPage);
 
+        // Assert
         Assertions.assertThat(result.getContent()).hasSize(2);
         assertThat(result)
                 .extracting(
@@ -291,6 +322,7 @@ class TodoServiceUnitTest {
     @Tag("Story=TBS8")
     @Tag("Scenario=2")
     void givenMultiplePagesExist_whenClientRequestsSpecificPage_thenCorrectPageReturnedWithMetadata() {
+        // Arrange
         Pageable secondPage = PageRequest.of(1, 2);
         List<Todo> todos = List.of(new Todo(), new Todo());
         Page<Todo> todosPaged = new PageImpl<>(todos, secondPage, 5);
@@ -301,8 +333,10 @@ class TodoServiceUnitTest {
                 new TodoView(4L, "Task 4", "Desc 4", false, Date.from(Instant.now()))
         );
 
+        // Act
         PageResponse<TodoView> result = todoService.readAll(VALID_OWNER_UID, secondPage);
 
+        // Assert
         Assertions.assertThat(result.getContent()).hasSize(2);
         assertThat(result)
                 .extracting(
@@ -322,19 +356,24 @@ class TodoServiceUnitTest {
 
     @Test
     void givenExistingTodo_whenDelete_thenRemovesTodo() {
+        // Arrange
         Todo todo = Todo.builder()
                 .id(VALID_EXISTENT_TODO_ID).ownerUid(VALID_OWNER_UID).build();
         when(todoRepository.findByIdAndOwnerUid(VALID_EXISTENT_TODO_ID, VALID_OWNER_UID)).thenReturn(Optional.of(todo));
 
+        // Act
         todoService.delete(VALID_OWNER_UID, VALID_EXISTENT_TODO_ID);
 
+        // Assert
         verify(todoRepository, times(1)).delete(todo);
     }
 
     @Test
     void givenNonExistingTodo_whenDelete_thenThrowsException() {
+        // Arrange
         when(todoRepository.findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID)).thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThatThrownBy(() -> todoService.delete(VALID_OWNER_UID, VALID_NON_EXISTENT_TODO_ID)).isInstanceOf(EntityNotFoundRestException.class);
         verify(todoRepository, times(1)).findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID);
     }
