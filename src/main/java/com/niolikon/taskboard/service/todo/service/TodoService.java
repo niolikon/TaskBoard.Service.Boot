@@ -57,7 +57,8 @@ public class TodoService implements ITodoService {
             throw new ForbiddenRestException("Cannot modify completed Todo");
         }
         todo.updateFrom(todoMapper.toTodo(todoRequest));
-        return todoMapper.toTodoView(todoRepository.save(todo));
+        todo = todoRepository.save(todo);
+        return todoMapper.toTodoView(todo);
     }
 
     @Override
