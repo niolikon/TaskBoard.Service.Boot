@@ -8,6 +8,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
+import static com.niolikon.taskboard.service.todo.controller.TodoApiPaths.SECURITY_PATTERN_TODO_EXACT;
+import static com.niolikon.taskboard.service.todo.controller.TodoApiPaths.SECURITY_PATTER_TODO_ALL;
+
 @Configuration
 public class SecurityConfig {
 
@@ -16,8 +19,8 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/Todos/**").hasRole("USER")
-                        .requestMatchers("/api/Todos").hasRole("USER")
+                        .requestMatchers(SECURITY_PATTER_TODO_ALL).hasRole("USER")
+                        .requestMatchers(SECURITY_PATTERN_TODO_EXACT).hasRole("USER")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
