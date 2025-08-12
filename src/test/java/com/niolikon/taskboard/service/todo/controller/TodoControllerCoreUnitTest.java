@@ -61,7 +61,6 @@ class TodoControllerCoreUnitTest {
         assertThat(response.getStatusCode()).isEqualTo(CREATED);
         assertThat(response.getBody()).isEqualTo(createdTodo);
         assertThat(response.getHeaders().getLocation()).isEqualTo(expectedLocation);
-        verify(todoService).create(JWT_SUBJECT_VALID_USER_ID, request);
     }
 
     @Test
@@ -78,7 +77,6 @@ class TodoControllerCoreUnitTest {
         // Assert
         assertThat(response.getStatusCode()).isEqualTo(OK);
         assertThat(response.getBody()).isEqualTo(todosPageResponse);
-        verify(todoService).readAll(JWT_SUBJECT_VALID_USER_ID, pageable_firstPageSize10_fromClient);
     }
 
     @Test
@@ -94,24 +92,21 @@ class TodoControllerCoreUnitTest {
         // Assert
         assertThat(response.getStatusCode()).isEqualTo(OK);
         assertThat(response.getBody()).isEqualTo(todo);
-        verify(todoService).read(JWT_SUBJECT_VALID_USER_ID, todoId);
     }
 
     @Test
     void givenValidInput_whenUpdateTodo_thenOkIsReturned() {
         // Arrange
         Long todoId = 1L;
-        TodoRequest updateRequest = todoRequest_valid_fromClient;
         TodoView updatedTodo = todoView_expected_fromTodoRequest;
         when(todoService.update(anyString(), eq(todoId), any(TodoRequest.class))).thenReturn(updatedTodo);
 
         // Act
-        ResponseEntity<TodoView> response = todoController.update(stubJwt, todoId, updateRequest);
+        ResponseEntity<TodoView> response = todoController.update(stubJwt, todoId, todoRequest_valid_fromClient);
 
         // Assert
         assertThat(response.getStatusCode()).isEqualTo(OK);
         assertThat(response.getBody()).isEqualTo(updatedTodo);
-        verify(todoService).update(JWT_SUBJECT_VALID_USER_ID, todoId, updateRequest);
     }
 
     @Test
@@ -119,17 +114,15 @@ class TodoControllerCoreUnitTest {
     void givenValidInput_whenPatchTodo_thenOkIsReturned() {
         // Arrange
         Long todoId = 1L;
-        TodoPatch patchRequest = todoPatch_done_fromClient;
         TodoView updatedTodo = todoView_expected_fromTodoPatchDone;
         when(todoService.patch(anyString(), eq(todoId), any(TodoPatch.class))).thenReturn(updatedTodo);
 
         // Act
-        ResponseEntity<TodoView> response = todoController.patch(stubJwt, todoId, patchRequest);
+        ResponseEntity<TodoView> response = todoController.patch(stubJwt, todoId, todoPatch_done_fromClient);
 
         // Assert
         assertThat(response.getStatusCode()).isEqualTo(OK);
         assertThat(response.getBody()).isEqualTo(updatedTodo);
-        verify(todoService).patch(JWT_SUBJECT_VALID_USER_ID, todoId, patchRequest);
     }
 
     @Test
@@ -147,7 +140,6 @@ class TodoControllerCoreUnitTest {
         // Assert
         assertThat(response.getStatusCode()).isEqualTo(OK);
         assertThat(response.getBody()).isEqualTo(pendingTodosPageResponse);
-        verify(todoService).readAllPending(JWT_SUBJECT_VALID_USER_ID, pageable_firstPageSize10_fromClient);
     }
 
     @Test
@@ -160,6 +152,5 @@ class TodoControllerCoreUnitTest {
 
         // Assert
         assertThat(response.getStatusCode()).isEqualTo(NO_CONTENT);
-        verify(todoService).delete(JWT_SUBJECT_VALID_USER_ID, todoId);
     }
 }

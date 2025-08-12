@@ -61,7 +61,8 @@ class TodoServiceCoreUnitTest {
                         VALID_OWNER_UID
                 );
 
-        verifyNoMoreInteractions(todoRepository, todoMapper); // On mutable operations with strict contract
+        // verifyNoMoreInteractions On mutable operations with strict contract
+        verifyNoMoreInteractions(todoRepository, todoMapper);
     }
 
     @Test
@@ -96,6 +97,7 @@ class TodoServiceCoreUnitTest {
         // Assert
         assertThat(result).isEqualTo(expectedView);
         verify(todoRepository).findByIdAndOwnerUid(VALID_EXISTENT_TODO_ID, VALID_OWNER_UID);
+        // no verifyNoMoreInteractions on read only operations
     }
 
     @Test
@@ -107,7 +109,6 @@ class TodoServiceCoreUnitTest {
         assertThatThrownBy(() -> todoService.read(VALID_OWNER_UID, VALID_NON_EXISTENT_TODO_ID))
                 .isInstanceOf(EntityNotFoundRestException.class);
         verify(todoRepository).findByIdAndOwnerUid(VALID_NON_EXISTENT_TODO_ID, VALID_OWNER_UID);
-        // no verifyNoMoreInteractions on read only operations, because refactor is more likely to occurr
     }
 
     @Test
