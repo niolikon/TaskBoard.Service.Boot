@@ -25,7 +25,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.http.HttpStatus.*;
 
-class TodoControllerUnitTest {
+class TodoControllerCoreUnitTest {
 
     private Jwt stubJwt;
     private ITodoService todoService;
