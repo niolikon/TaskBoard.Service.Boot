@@ -1,4 +1,4 @@
-package com.niolikon.taskboard.service.todo;
+package com.niolikon.taskboard.service.todo.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -7,10 +7,10 @@ import com.niolikon.taskboard.framework.data.dto.PageResponse;
 import com.niolikon.taskboard.framework.test.annotations.WithIsolatedDataJpaTestScenario;
 import com.niolikon.taskboard.framework.test.containers.PostgreSQLTestContainersConfig;
 import com.niolikon.taskboard.framework.test.extensions.IsolatedDataJpaTestScenarioExtension;
+import com.niolikon.taskboard.service.todo.controller.scenarios.MultipleTodosWithPaginationTestScenario;
+import com.niolikon.taskboard.service.todo.controller.scenarios.SingleTodoTestScenario;
+import com.niolikon.taskboard.service.todo.controller.scenarios.SingleTodoWithFixedDueDateTestScenario;
 import com.niolikon.taskboard.service.todo.dto.TodoView;
-import com.niolikon.taskboard.service.todo.scenarios.MultipleTodosWithPaginationTestScenario;
-import com.niolikon.taskboard.service.todo.scenarios.SingleTodoTestScenario;
-import com.niolikon.taskboard.service.todo.scenarios.SingleTodoWithFixedDueDateTestScenario;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,11 +22,20 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
+import java.io.IOException;
+
+import static com.niolikon.taskboard.service.todo.controller.TodoApiPaths.API_PATH_TODO_BASE;
+import static com.niolikon.taskboard.service.todo.controller.TodoApiPaths.API_PATH_TODO_PENDING;
+import static com.niolikon.taskboard.service.todo.controller.testdata.TodoControllerTestData.VALID_USER_ROLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -34,6 +43,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(PostgreSQLTestContainersConfig.class)
 @ExtendWith(IsolatedDataJpaTestScenarioExtension.class)
 class TodoControllerIT {
+    private static final ObjectMapper objectMapper = new ObjectMapper()
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+        .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -42,26 +55,17 @@ class TodoControllerIT {
     @Tag("Story=TBS3")
     @Tag("Scenario=1")
     void givenSingleTodo_whenReadAll_thenListWithSingleTodoIsReturned() throws Exception {
-        String jsonResponse = mockMvc.perform(
-                get("/api/Todos")
-                        .with(jwt()
-                                .jwt(jwt -> jwt.subject(SingleTodoTestScenario.USER_UUID))
-                                .authorities(new SimpleGrantedAuthority("ROLE_USER")))
+        // Act
+        MvcResult mvcResult = mockMvc.perform(
+                get(API_PATH_TODO_BASE)
+                        .with(authorizedUser(SingleTodoTestScenario.USER_UUID))
                         .accept(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+                .andReturn();
 
-        ObjectMapper objectMapper = new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-
-        PageResponse<TodoView> results = objectMapper.readValue(
-                jsonResponse,
-                new TypeReference<>() {}
-        );
+        // Assert
+        PageResponse<TodoView> results = parseJsonFromResult(mvcResult, new TypeReference<>() {});
 
         assertThat(results.getContent()).hasSize(1);
         assertThat(results.getElementsTotal()).isGreaterThan(0);
@@ -72,26 +76,17 @@ class TodoControllerIT {
     @Tag("Story=TBS3")
     @Tag("Scenario=1")
     void givenSingleTodo_whenReadAllPending_thenSingleTodoIsReturned() throws Exception {
-        String jsonResponse = mockMvc.perform(
-                        get("/api/Todos/pending")
-                                .with(jwt()
-                                        .jwt(jwt -> jwt.subject(SingleTodoTestScenario.USER_UUID))
-                                        .authorities(new SimpleGrantedAuthority("ROLE_USER")))
+        // Act
+        MvcResult mvcResult = mockMvc.perform(
+                        get(API_PATH_TODO_PENDING)
+                                .with(authorizedUser(SingleTodoTestScenario.USER_UUID))
                                 .accept(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+                .andReturn();
 
-        ObjectMapper objectMapper = new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-
-        PageResponse<TodoView> results = objectMapper.readValue(
-                jsonResponse,
-                new TypeReference<>() {}
-        );
+        // Assert
+        PageResponse<TodoView> results = parseJsonFromResult(mvcResult, new TypeReference<>() {});
 
         assertThat(results.getContent()).hasSize(1);
         assertThat(results.getElementsTotal()).isGreaterThan(0);
@@ -101,11 +96,10 @@ class TodoControllerIT {
     @WithIsolatedDataJpaTestScenario(dataClass = SingleTodoWithFixedDueDateTestScenario.class)
     @Tag("Bugfix=TBS6")
     void givenSingleTodo_whenReadTodo_thenDueDateIsFormattedCorrectly() throws Exception {
+        // Act
         mockMvc.perform(
-                        get("/api/Todos/pending")
-                                .with(jwt()
-                                        .jwt(jwt -> jwt.subject(SingleTodoTestScenario.USER_UUID))
-                                        .authorities(new SimpleGrantedAuthority("ROLE_USER")))
+                        get(API_PATH_TODO_PENDING)
+                                .with(authorizedUser(SingleTodoWithFixedDueDateTestScenario.USER_UUID))
                                 .accept(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isOk())
@@ -117,16 +111,17 @@ class TodoControllerIT {
     @Tag("Story=TBS8")
     @Tag("Scenario=1")
     void givenMoreTodosThenPageSize_whenFetchingTodosWithPagination_thenSystemReturnsTheFirstSubsetWithPaginationMetadata() throws Exception {
-        mockMvc.perform(
-                        get("/api/Todos/pending")
+        // Act
+        ResultActions fetchTodosResult  = mockMvc.perform(
+                        get(API_PATH_TODO_PENDING)
                                 .param("page", String.valueOf(MultipleTodosWithPaginationTestScenario.SAMPLE_QUERY1.getPageNumber()))
                                 .param("size", String.valueOf(MultipleTodosWithPaginationTestScenario.SAMPLE_QUERY1.getPageSize()))
-                                .with(jwt()
-                                        .jwt(jwt -> jwt.subject(SingleTodoTestScenario.USER_UUID))
-                                        .authorities(new SimpleGrantedAuthority("ROLE_USER"))
-                                )
+                                .with(authorizedUser(MultipleTodosWithPaginationTestScenario.USER_UUID))
                                 .accept(MediaType.APPLICATION_JSON)
-                )
+                );
+
+        // Assert
+        fetchTodosResult
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(MultipleTodosWithPaginationTestScenario.SAMPLE_QUERY1_ELEMENTS_SIZE))
                 .andExpect(jsonPath("$.elementsSize").value(MultipleTodosWithPaginationTestScenario.SAMPLE_QUERY1_ELEMENTS_SIZE))
@@ -145,16 +140,17 @@ class TodoControllerIT {
     @Tag("Story=TBS8")
     @Tag("Scenario=2")
     void givenMultiplePagesOfTodosExist_whenTheClientRequestsSpecificPageNumber_thenSystemReturnsTheCorrectPageWithPaginationMetadata() throws Exception {
-        mockMvc.perform(
-                        get("/api/Todos/pending")
+        // Arrange
+        ResultActions fetchTodosResult  = mockMvc.perform(
+                        get(API_PATH_TODO_PENDING)
                                 .param("page", String.valueOf(MultipleTodosWithPaginationTestScenario.SAMPLE_QUERY2.getPageNumber()))
                                 .param("size", String.valueOf(MultipleTodosWithPaginationTestScenario.SAMPLE_QUERY2.getPageSize()))
-                                .with(jwt()
-                                        .jwt(jwt -> jwt.subject(SingleTodoTestScenario.USER_UUID))
-                                        .authorities(new SimpleGrantedAuthority("ROLE_USER"))
-                                )
+                                .with(authorizedUser(MultipleTodosWithPaginationTestScenario.USER_UUID))
                                 .accept(MediaType.APPLICATION_JSON)
-                )
+                );
+
+        // Assert
+        fetchTodosResult
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(MultipleTodosWithPaginationTestScenario.SAMPLE_QUERY2_ELEMENTS_SIZE))
                 .andExpect(jsonPath("$.elementsSize").value(MultipleTodosWithPaginationTestScenario.SAMPLE_QUERY2_ELEMENTS_SIZE))
@@ -165,5 +161,23 @@ class TodoControllerIT {
                 .andExpect(jsonPath("$.first").value(MultipleTodosWithPaginationTestScenario.SAMPLE_QUERY2_FIRST))
                 .andExpect(jsonPath("$.last").value(MultipleTodosWithPaginationTestScenario.SAMPLE_QUERY2_LAST))
                 .andExpect(jsonPath("$.empty").value(MultipleTodosWithPaginationTestScenario.SAMPLE_QUERY2_EMPTY));
+    }
+
+    // --------------------------------------------------
+    // Helpers
+    // --------------------------------------------------
+
+    private RequestPostProcessor authorizedUser(String subject) {
+        return jwt()
+                .jwt(jwt -> jwt.subject(subject))
+                .authorities(new SimpleGrantedAuthority(VALID_USER_ROLE));
+    }
+
+    private <T> T parseJsonFromResult(MvcResult mvcResult, TypeReference<T> typeRef) throws IOException {
+        String jsonResponse = mvcResult
+                .getResponse()
+                .getContentAsString();
+
+        return objectMapper.readValue(jsonResponse, typeRef);
     }
 }

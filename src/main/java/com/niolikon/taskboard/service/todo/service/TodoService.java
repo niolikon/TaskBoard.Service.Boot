@@ -57,7 +57,8 @@ public class TodoService implements ITodoService {
             throw new ForbiddenRestException("Cannot modify completed Todo");
         }
         todo.updateFrom(todoMapper.toTodo(todoRequest));
-        return todoMapper.toTodoView(todoRepository.save(todo));
+        todo = todoRepository.save(todo);
+        return todoMapper.toTodoView(todo);
     }
 
     @Override
@@ -67,7 +68,7 @@ public class TodoService implements ITodoService {
                 .orElseThrow(() -> new EntityNotFoundRestException(TodoService.TODO_NOT_FOUND));
         if (Objects.isNull(todo.getIsCompleted()) || (! todo.getIsCompleted()))  {
             todo.updateFrom(todoMapper.toTodo(todoPatch));
-            todoRepository.save(todo);
+            todo = todoRepository.save(todo);
         }
 
         return todoMapper.toTodoView(todo);
