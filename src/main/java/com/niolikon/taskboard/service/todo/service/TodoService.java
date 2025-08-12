@@ -67,7 +67,7 @@ public class TodoService implements ITodoService {
                 .orElseThrow(() -> new EntityNotFoundRestException(TodoService.TODO_NOT_FOUND));
         if (Objects.isNull(todo.getIsCompleted()) || (! todo.getIsCompleted()))  {
             todo.updateFrom(todoMapper.toTodo(todoPatch));
-            todoRepository.save(todo);
+            todo = todoRepository.save(todo);
         }
 
         return todoMapper.toTodoView(todo);
