@@ -1,0 +1,142 @@
+name: Publish Release
+
+on:
+  push:
+    tags:
+      - "[0-9][0-9]*.[0-9][0-9]*.[0-9][0-9]*"
+      - "!*-*"
+
+jobs:
+  publish-release:
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: [Setup] Checkout code
+        uses: actions/checkout@v4
+
+      - name: [Setup] Install JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: [Setup] Extract version from tag
+        id: extract_version
+        run: |
+          VERSION=${GITHUB_REF##*/}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Extracted version: $VERSION"
+
+      - name: [Build] Check POM version matches tag
+        run: |
+          POM_VERSION=$(mvn -q help:evaluate -Dexpression=project.version -DforceStdout -DtrimStackTrace)
+          echo "POM_VERSION=$POM_VERSION"
+          if [ "$POM_VERSION" != "${VERSION}" ]; then
+            echo "POM version ($POM_VERSION) != tag (${VERSION})"
+            exit 1
+          fi
+
+      - name: [Build] Compile & Run tests
+        run: mvn -B -ntp clean verify
+
+      - name: [Build] Archive test reports (if any)
+        id: zip_reports
+        run: |
+          mkdir -p artifacts
+          set +e
+          copied=0
+          [ -d target/surefire-reports ] && cp -r target/surefire-reports artifacts/ && copied=1
+          [ -d target/failsafe-reports ] && cp -r target/failsafe-reports artifacts/ && copied=1
+          [ -d target/site/jacoco ] && cp -r target/site/jacoco artifacts/ && copied=1
+          if [ "$copied" = "1" ]; then
+            (cd artifacts && zip -r ../test-report.zip .)
+            echo "has_zip=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_zip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: [Build] Locate JAR artifact
+        id: find_jar
+        run: |
+          JAR_PATH=$(find target -type f -name "*.jar" ! -name "original-*.jar" | head -n 1)
+          echo "JAR_PATH=$JAR_PATH" >> $GITHUB_ENV
+          if [ -n "$JAR_PATH" ]; then
+            echo "has_jar=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_jar=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: [Docker] Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: [Docker] Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: [Docker] Extract image name
+        id: extract_imagename
+        run: |
+          raw_repo="${{ github.repository }}"
+          NORMALIZED=$(echo "$raw_repo" | tr '[:upper:]' '[:lower:]' | tr '.' '-')
+          echo "REPOSITORY_NORMALIZED=$NORMALIZED" >> $GITHUB_ENV
+          echo "Extracted image name: $NORMALIZED"
+
+      - name: [Docker] Build & Push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          no-cache: true
+          tags: |
+            ghcr.io/${{ env.REPOSITORY_NORMALIZED }}:latest
+            ghcr.io/${{ env.REPOSITORY_NORMALIZED }}:${{ env.VERSION }}
+
+      - name: [GitHub Release] Create draft
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: Release ${{ env.VERSION }}
+          draft: true
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: [GitHub Release] Upload JAR
+        if: steps.find_jar.outputs.has_jar == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.JAR_PATH }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: [GitHub Release] Upload test report
+        if: steps.zip_reports.outputs.has_zip == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: test-report.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: [Maven Release] Deploy to GitHub Packages
+        run: mvn -B -ntp deploy -DskipTests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: [GitHub Release] Publish draft
+        run: |
+          REL_ID=$(gh api -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/releases/tags/${{ env.VERSION }} -q .id)
+          gh api -X PATCH \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/releases/$REL_ID \
+            -f draft=false
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
