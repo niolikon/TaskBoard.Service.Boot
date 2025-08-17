@@ -99,44 +99,53 @@ jobs:
             ghcr.io/${{ env.REPOSITORY_NORMALIZED }}:latest
             ghcr.io/${{ env.REPOSITORY_NORMALIZED }}:${{ env.VERSION }}
 
-      - name: GitHub Release - Create draft
+      - name: GitHub Release - Define asset list
+        id: assets
+        run: |
+          files=()
+          # Add JAR if has jar
+          if [ "${{ steps.find_jar.outputs.has_jar }}" = "true" ] && [ -n "${{ env.JAR_PATH }}" ]; then
+            files+=("${{ env.JAR_PATH }}")
+          fi
+
+          # Add test-report.zip if has zip
+          if [ "${{ steps.zip_reports.outputs.has_zip }}" = "true" ]; then
+            files+=("test-report.zip")
+          fi
+
+          # Export list as multiline output
+          if [ ${#files[@]} -gt 0 ]; then
+            echo "has_files=true" >> $GITHUB_OUTPUT
+            {
+              echo "files<<EOF"
+              printf "%s\n" "${files[@]}"
+              echo "EOF"
+            } >> $GITHUB_OUTPUT
+          else
+            echo "has_files=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: GitHub Release - Create release
+        if: steps.assets.outputs.has_files == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.VERSION }}
           name: Release ${{ env.VERSION }}
-          draft: true
+          draft: false
           prerelease: false
+          make_latest: true
+          files: ${{ steps.assets.outputs.files }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: GitHub Release - Upload JAR
-        if: steps.find_jar.outputs.has_jar == 'true'
+      - name: GitHub Release - Create release (no asset)
+        if: steps.assets.outputs.has_files != 'true'
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.JAR_PATH }}
+          tag_name: ${{ env.VERSION }}
+          name: Release ${{ env.VERSION }}
+          draft: false
+          prerelease: false
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: GitHub Release - Upload test report
-        if: steps.zip_reports.outputs.has_zip == 'true'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: test-report.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Maven Release - Deploy to GitHub Packages
-        run: mvn -B -ntp deploy -DskipTests
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: GitHub Release - Publish draft
-        run: |
-          REL_ID=$(gh api -H "Accept: application/vnd.github+json" \
-            /repos/${{ github.repository }}/releases/tags/${{ env.VERSION }} -q .id)
-          gh api -X PATCH \
-            -H "Accept: application/vnd.github+json" \
-            /repos/${{ github.repository }}/releases/$REL_ID \
-            -f draft=false
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
